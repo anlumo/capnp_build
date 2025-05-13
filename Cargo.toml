@@ -1,0 +1,7 @@
+[package]
+name = "capnp_build"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+# capnp will be needed by crates using this crate, but technically it's not required here
