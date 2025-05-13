@@ -4,18 +4,18 @@
 #[macro_export]
 macro_rules! capnp_build {
     // Empty message
-    ($root_builder:path) => {{
-        let mut message = capnp::message::Builder::new_default();
-        message.init_root::<$root_builder>();
+    ($root_owned:path) => {{
+        let mut message = capnp::message::TypedBuilder::<$root_owned>::new_default();
+        message.init_root();
 
         message
     }};
-    ($root_builder:path, {
+    ($root_owned:path, {
             $($body:tt)*
     }) => {{
-        let mut message = capnp::message::Builder::new_default();
+        let mut message = capnp::message::TypedBuilder::<$root_owned>::new_default();
         #[allow(unused)]
-        let mut builder = message.init_root::<$root_builder>();
+        let mut builder = message.init_root();
 
         #[allow(unused_assignments)]
         {
