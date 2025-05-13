@@ -15,6 +15,62 @@ The macro supports a variety of syntaxes for setting fields, including:
 * Setting a list field to a list of messages: `foo = [{ bar = 42 }, { baz = 24 }]`
 * Setting a field to the result of a function call: `foo [ foo::init ] = 42`
 
+## Example
+
+Given the schema `foo.capnp`:
+
+```capnp
+struct ServiceMessage {
+  id @0 :UInt64;
+  message @1 :Data;
+  userData @2 :Data;
+}
+```
+
+The macro allows you to initialize the builder using
+
+```rust
+let id = 15;
+let data = "my data";
+let response_data: capnp::message::Builder<HeapAllocator> =
+    capnp_build!(foo_capnp::service_message::Builder, {
+        id = id,
+        message = &[2, 3, 5, 7, 11, 13, 17, 19, 23],
+        user_data = data.as_bytes(),
+    });
+```
+
+Nesting and unions (named and unnamed) are also possible:
+
+```capnp
+struct MessageFrame {
+    id @0 :UInt64;
+    :union {
+        ok @1 :ServiceMessage;
+        error @2 :Text;
+    }
+}
+```
+
+```rust
+let id = 15;
+let data = "my data";
+let ok_response_data: capnp::message::Builder<HeapAllocator> =
+    capnp_build!(foo_capnp::message_frame::Builder, {
+        id = 2,
+        ok = {
+            id = id,
+            message = &[2, 3, 5, 7, 11, 13, 17, 19, 23],
+            user_data = data.as_bytes(),
+        }
+    });
+let err_response_data: capnp::message::Builder<HeapAllocator> =
+    capnp_build!(foo_capnp::message_frame::Builder, {
+        id = 3,
+        err = "Request failed",
+    });
+```
+
 ## License
 
 <sup>
