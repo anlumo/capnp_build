@@ -40,6 +40,8 @@ let response_data: capnp::message::Builder<HeapAllocator> =
     });
 ```
 
+The right side of the assignment `=` can be any expression, including function calls!
+
 Nesting and unions (named and unnamed) are also possible:
 
 ```capnp
@@ -70,6 +72,61 @@ let err_response_data: capnp::message::Builder<HeapAllocator> =
         err = "Request failed",
     });
 ```
+
+### Advanced Usage
+
+Sometimes, it's more complicated than that. For example, you might want to store UUIDs, but Cap'n Proto doesn't have support for that data type (or even a primitive with the same size).
+
+So, you can define your UUID like this:
+
+```capnp
+struct Uuid {
+    low @0 :UInt64;
+    high @1 :UInt64;
+}
+```
+
+and then use it like this:
+
+```capnp
+struct ServiceMessage {
+  id @0 :Uuid;
+  message @1 :Data;
+}
+```
+
+However, if you want to use the syntax of `capnp_build!` as explained above, it can quickly get cumbersome:
+
+```rust
+let uuid = Uuid::new_v4();
+let (high, low) = uuid.as_u64_pair();
+let response_data = capnp_build!(foo_capnp::service_message::Builder, {
+    id = {
+        low = low,
+        high = high,
+    },
+    message = &[1,2,3],
+});
+```
+
+So, there's a way to write functions that can be used within the macro:
+
+```rust
+fn build_uuid(uuid: uuid::Uuid, mut builder: foo_capnp::uuid::Builder) {
+    let (high, low) = uuid.as_u64_pair();
+    builder.set_low(low);
+    builder.set_high(high);
+}
+
+fn foo() {
+    let response_data = capnp_build!(foo_capnp::service_message::Builder, {
+        id[build_uuid] = Uuid::new_v4(),
+        message = &[1,2,3],
+    });
+}
+```
+
+The function is passed in with square brackets: `<field name>[<function name>] = <value>`. `<value>` is passed in as the first parameter and the builder as the second parameter. The Rust compiler takes care of checking types automatically.
 
 ## License
 
