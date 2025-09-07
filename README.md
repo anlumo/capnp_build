@@ -128,6 +128,35 @@ fn foo() {
 
 The function is passed in with square brackets: `<field name>[<function name>] = <value>`. `<value>` is passed in as the first parameter and the builder as the second parameter. The Rust compiler takes care of checking types automatically.
 
+If you want such a function to fill in a list of items, you have to specify the length:
+
+```capnp
+struct ServicesMessage {
+  ids @0 :List(Uuid);
+  message @1 :Data;
+}
+```
+
+```rust
+fn build_uuids(uuids: &[uuid::Uuid], mut builder: capnp::struct_list::Builder<'_, foo_capnp::uuid::Builder>) {
+    for (idx, uuid) in uuids.iter().enumerate() {
+        let uuid_builder = builder.get(idx);
+        let (high, low) = uuid.as_u64_pair();
+        uuid_builder.set_low(low);
+        uuid_builder.set_high(high);
+    }
+}
+
+fn foo() {
+    let response_data = capnp_build!(foo_capnp::services_message::Owned, {
+        ids[build_uuids; 3] = &[Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4()],
+        message = &[1,2,3],
+    });
+}
+```
+
+The number can also be any expression. Note that this expression is evaluated before the function is called.
+
 ## License
 
 <sup>

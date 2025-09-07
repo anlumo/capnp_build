@@ -114,6 +114,20 @@ macro_rules! capnp_build_fields {
         }
     }};
 
+    // List function call, passing in the builder
+    ($builder:ident, { $field:ident [ $func:ident; $n:expr ] = $val:expr, $($rest:tt)* }) => {{
+        paste::paste! {
+            $func($val, $builder.reborrow().[<init_ $field>]($n));
+        }
+        $crate::capnp_build_fields!($builder, { $($rest)* });
+    }};
+    // List function call, passing in the builder (no trailing comma)
+    ($builder:ident, { $field:ident [ $func:ident; $n:expr ] = $val:expr }) => {{
+        paste::paste! {
+            $func($val, $builder.[<init_ $field>]($n));
+        }
+    }};
+
     // Primitives or Enums or Void
     ($builder:ident, { $field:ident = $val:expr, $($rest:tt)* }) => {{
         paste::paste! {
